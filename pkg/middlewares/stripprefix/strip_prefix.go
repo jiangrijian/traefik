@@ -2,6 +2,7 @@ package stripprefix
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -40,6 +41,8 @@ func (s *stripPrefix) GetTracingInformation() (string, ext.SpanKindEnum) {
 }
 
 func (s *stripPrefix) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+
+	fmt.Println("stripPrefix ServerHttp start()...")
 	for _, prefix := range s.prefixes {
 		if strings.HasPrefix(req.URL.Path, prefix) {
 			req.URL.Path = getPrefixStripped(req.URL.Path, prefix)

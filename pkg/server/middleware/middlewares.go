@@ -17,6 +17,7 @@ import (
 	"github.com/containous/traefik/v2/pkg/middlewares/compress"
 	"github.com/containous/traefik/v2/pkg/middlewares/customerrors"
 	"github.com/containous/traefik/v2/pkg/middlewares/headers"
+	"github.com/containous/traefik/v2/pkg/middlewares/huaweilogin"
 	"github.com/containous/traefik/v2/pkg/middlewares/inflightreq"
 	"github.com/containous/traefik/v2/pkg/middlewares/ipwhitelist"
 	"github.com/containous/traefik/v2/pkg/middlewares/passtlsclientcert"
@@ -101,6 +102,10 @@ func checkRecursion(ctx context.Context, middlewareName string) (context.Context
 
 // it is the responsibility of the caller to make sure that b.configs[middlewareName].Middleware exists
 func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (alice.Constructor, error) {
+
+	fmt.Println("middlewares.go buildConstructor...")
+	fmt.Printf("print MiddlewareNames .... :" + middlewareName)
+
 	config := b.configs[middlewareName]
 	if config == nil || config.Middleware == nil {
 		return nil, fmt.Errorf("invalid middleware %q configuration", middlewareName)
@@ -113,6 +118,13 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 	if config.AddPrefix != nil {
 		middleware = func(next http.Handler) (http.Handler, error) {
 			return addprefix.New(ctx, next, *config.AddPrefix, middlewareName)
+		}
+	}
+
+	if config.HuaweiLogin != nil {
+		fmt.Println("create stripprefix begin...")
+		middleware = func(next http.Handler) (http.Handler, error) {
+			return huaweilogin.New(ctx, next, *config.HuaweiLogin, middlewareName)
 		}
 	}
 
@@ -308,6 +320,7 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 		if middleware != nil {
 			return nil, badConf
 		}
+		fmt.Println("create stripprefix begin...")
 		middleware = func(next http.Handler) (http.Handler, error) {
 			return stripprefix.New(ctx, next, *config.StripPrefix, middlewareName)
 		}

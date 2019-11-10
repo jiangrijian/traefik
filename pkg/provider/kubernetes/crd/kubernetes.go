@@ -205,9 +205,10 @@ func (p *Provider) loadConfigurationFromCRD(ctx context.Context, client Client) 
 			errorPage.Service = serviceName
 			conf.HTTP.Services[serviceName] = errorPageService
 		}
-
+		fmt.Println("Kubernetes.go ... loadConfigurationFromCRD func()...")
 		conf.HTTP.Middlewares[id] = &dynamic.Middleware{
 			AddPrefix:         middleware.Spec.AddPrefix,
+			HuaweiLogin:       middleware.Spec.HuaweiLogin,
 			StripPrefix:       middleware.Spec.StripPrefix,
 			StripPrefixRegex:  middleware.Spec.StripPrefixRegex,
 			ReplacePath:       middleware.Spec.ReplacePath,
