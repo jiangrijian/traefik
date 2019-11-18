@@ -2,12 +2,15 @@ package huaweilogin
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"github.com/containous/traefik/v2/pkg/config/dynamic"
 	"github.com/containous/traefik/v2/pkg/log"
 	"github.com/containous/traefik/v2/pkg/middlewares"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
+	"strings"
 )
 
 const (
@@ -40,12 +43,12 @@ func (s *huaweiLogin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// 如果cookie中没有JSESSIONID,获取 JSESSIONID ,添加到 header 中
 	// 发送登陆请求
 	jessesinId := sendLoginToGetSessionId(s)
-	fmt.Println("after sendLoginToGetSessionId JESSIONID:" + jessesinId)
+	fmt.Println("after sendLoginToGetSessionId JSESSIONID:" + jessesinId)
 	if jessesinId != "" {
 		cookie := &http.Cookie{Name: "JSESSIONID", Value: jessesinId}
 		req.AddCookie(cookie)
 	} else {
-		println("JESSIONID is nil")
+		println("JSESSIONID is nil")
 	}
 	s.next.ServeHTTP(rw, req)
 
@@ -60,19 +63,44 @@ func sendLoginToGetSessionId(s *huaweiLogin) string {
 	data["account"] = []string{s.user}
 	data["pwd"] = []string{s.password}
 	fmt.Println("huaweiLogin getJessionId begin...")
-	resp2, _ := http.PostForm(s.loginUrl, data)
 
-	fmt.Println(resp2.StatusCode, resp2.Status)
-	fmt.Println(resp2)
+	var resp2 *http.Response
 
-	cookies := resp2.Cookies()
-	fmt.Println("response's cookies: ", cookies)
-	for _, v := range cookies {
-		if v.Name == "JSESSIONID" {
-			jessionId = v.Value
-		}
+	if strings.HasPrefix(s.loginUrl, "http") {
+
+		fmt.Println("start send http://...")
+
+		resp2, _ = http.PostForm(s.loginUrl, data)
+
+		fmt.Println(resp2.StatusCode, resp2.Status)
+
 	}
-	defer resp2.Body.Close()
+	if strings.HasPrefix(s.loginUrl, "https") {
+		fmt.Println("start send https://...")
+
+		tr := &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}
+		cookieJar, _ := cookiejar.New(nil)
+		c := &http.Client{
+			Jar:       cookieJar,
+			Transport: tr,
+		}
+		resp2, _ = c.PostForm(s.loginUrl, data)
+	}
+	if resp2 == nil {
+		fmt.Println("response is nil")
+	} else {
+		cookies := resp2.Cookies()
+		fmt.Println("response's cookies: ", cookies)
+		for _, v := range cookies {
+			if v.Name == "JSESSIONID" {
+				jessionId = v.Value
+			}
+		}
+		fmt.Println("huaweiLogin getJessionId begin...")
+		defer resp2.Body.Close()
+	}
 
 	// GET 接口
 	/*resp, err := http.Get("http://localhost:12345/")
