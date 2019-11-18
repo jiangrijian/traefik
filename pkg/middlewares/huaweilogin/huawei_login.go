@@ -66,7 +66,7 @@ func sendLoginToGetSessionId(s *huaweiLogin) string {
 
 	var resp2 *http.Response
 
-	if strings.HasPrefix(s.loginUrl, "http") {
+	if strings.HasPrefix(s.loginUrl, "http:") {
 
 		fmt.Println("start send http://...")
 
@@ -75,7 +75,7 @@ func sendLoginToGetSessionId(s *huaweiLogin) string {
 		fmt.Println(resp2.StatusCode, resp2.Status)
 
 	}
-	if strings.HasPrefix(s.loginUrl, "https") {
+	if strings.HasPrefix(s.loginUrl, "https:") {
 		fmt.Println("start send https://...")
 
 		tr := &http.Transport{
