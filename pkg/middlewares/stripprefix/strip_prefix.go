@@ -45,14 +45,17 @@ func (s *stripPrefix) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	fmt.Println("stripPrefix ServerHttp start()...")
 	for _, prefix := range s.prefixes {
 		if strings.HasPrefix(req.URL.Path, prefix) {
+			fmt.Printf("before strip URL detail: %+v\n", req.URL)
 			req.URL.Path = getPrefixStripped(req.URL.Path, prefix)
 			if req.URL.RawPath != "" {
 				req.URL.RawPath = getPrefixStripped(req.URL.RawPath, prefix)
 			}
 			s.serveRequest(rw, req, strings.TrimSpace(prefix))
+			fmt.Printf("after strip URL detail: %+v\n", req.URL)
 			return
 		}
 	}
+	fmt.Printf("strip-middleware request detail: %+v\n", req)
 	s.next.ServeHTTP(rw, req)
 }
 

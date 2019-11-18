@@ -47,9 +47,12 @@ func (s *huaweiLogin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if jessesinId != "" {
 		cookie := &http.Cookie{Name: "JSESSIONID", Value: jessesinId}
 		req.AddCookie(cookie)
+		req.Header.Set("JSESSIONID", jessesinId)
 	} else {
 		println("JSESSIONID is nil")
 	}
+
+	fmt.Printf("login_middleware request detail: %+v\n", req)
 	s.next.ServeHTTP(rw, req)
 
 }

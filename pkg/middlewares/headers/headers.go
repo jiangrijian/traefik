@@ -4,6 +4,7 @@ package headers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -150,6 +151,8 @@ func (s *Header) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 // modifyCustomRequestHeaders sets or deletes custom request headers.
 func (s *Header) modifyCustomRequestHeaders(req *http.Request) {
 	// Loop through Custom request headers
+	fmt.Println("start modifyCustomRequestHeaders() ...")
+	fmt.Printf("custom-requestheader-middleware request detail before modify: %+v\n", req)
 	for header, value := range s.headers.CustomRequestHeaders {
 		if value == "" {
 			req.Header.Del(header)
@@ -157,6 +160,7 @@ func (s *Header) modifyCustomRequestHeaders(req *http.Request) {
 			req.Header.Set(header, value)
 		}
 	}
+	fmt.Printf("custom-requestheader-middleware request detail after modify: %+v\n", req)
 }
 
 // preRequestModifyCorsResponseHeaders sets during request processing time,
