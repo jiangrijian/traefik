@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/containous/traefik/v2/pkg/types"
 	"net/http"
 	"strings"
-
+	
 	"github.com/containous/alice"
 	"github.com/containous/traefik/v2/pkg/config/runtime"
 	"github.com/containous/traefik/v2/pkg/middlewares/addprefix"
@@ -26,6 +27,7 @@ import (
 	"github.com/containous/traefik/v2/pkg/middlewares/replacepath"
 	"github.com/containous/traefik/v2/pkg/middlewares/replacepathregex"
 	"github.com/containous/traefik/v2/pkg/middlewares/retry"
+	"github.com/containous/traefik/v2/pkg/middlewares/sflogger"
 	"github.com/containous/traefik/v2/pkg/middlewares/stripprefix"
 	"github.com/containous/traefik/v2/pkg/middlewares/stripprefixregex"
 	"github.com/containous/traefik/v2/pkg/middlewares/tracing"
@@ -54,7 +56,7 @@ func NewBuilder(configs map[string]*runtime.MiddlewareInfo, serviceBuilder servi
 }
 
 // BuildChain creates a middleware chain
-func (b *Builder) BuildChain(ctx context.Context, middlewares []string) *alice.Chain {
+func (b *Builder) BuildChain(ctx context.Context, middlewares []string, service string) *alice.Chain {
 	chain := alice.New()
 	for _, name := range middlewares {
 		middlewareName := internal.GetQualifiedName(ctx, name)
@@ -71,7 +73,7 @@ func (b *Builder) BuildChain(ctx context.Context, middlewares []string) *alice.C
 				return nil, err
 			}
 
-			constructor, err := b.buildConstructor(constructorContext, middlewareName)
+			constructor, err := b.buildConstructor(constructorContext, middlewareName, service)
 			if err != nil {
 				b.configs[middlewareName].AddError(err, true)
 				return nil, err
@@ -101,7 +103,7 @@ func checkRecursion(ctx context.Context, middlewareName string) (context.Context
 }
 
 // it is the responsibility of the caller to make sure that b.configs[middlewareName].Middleware exists
-func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (alice.Constructor, error) {
+func (b *Builder) buildConstructor(ctx context.Context, middlewareName string, service string) (alice.Constructor, error) {
 
 	fmt.Println("middlewares.go buildConstructor...")
 	fmt.Printf("print MiddlewareNames .... :" + middlewareName)
@@ -160,7 +162,7 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 		}
 		config.Chain.Middlewares = qualifiedNames
 		middleware = func(next http.Handler) (http.Handler, error) {
-			return chain.New(ctx, next, *config.Chain, b, middlewareName)
+			return chain.New(ctx, next, *config.Chain, b, middlewareName, service)
 		}
 	}
 
@@ -333,6 +335,19 @@ func (b *Builder) buildConstructor(ctx context.Context, middlewareName string) (
 		}
 		middleware = func(next http.Handler) (http.Handler, error) {
 			return stripprefixregex.New(ctx, next, *config.StripPrefixRegex, middlewareName)
+		}
+	}
+	
+	if config.SfLogger != nil {
+		middleware = func(next http.Handler) (http.Handler, error) {
+			sfConfig := &types.SfLogger{
+				FilePath: config.SfLogger.FilePath,
+				BufferingSize: config.SfLogger.BufferingSize,
+				BodyEnable: config.SfLogger.BodyEnable,
+				BodyMaxSize: config.SfLogger.BodyMaxSize,
+				Service: service,
+			}
+			return sflogger.NewHandler(sfConfig, next)
 		}
 	}
 

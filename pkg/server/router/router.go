@@ -159,7 +159,7 @@ func (m *Manager) buildHTTPHandler(ctx context.Context, router *runtime.RouterIn
 		return nil, err
 	}
 
-	mHandler := m.middlewaresBuilder.BuildChain(ctx, router.Middlewares)
+	mHandler := m.middlewaresBuilder.BuildChain(ctx, router.Middlewares, router.Service)
 
 	tHandler := func(next http.Handler) (http.Handler, error) {
 		return tracing.NewForwarder(ctx, routerName, router.Service, next), nil

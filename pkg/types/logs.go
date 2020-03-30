@@ -119,3 +119,11 @@ func checkFieldHeaderValue(value string, defaultValue string) string {
 	}
 	return defaultValue
 }
+
+type SfLogger struct {
+	FilePath      string            `description:"sf log file path. Stdout is used when omitted or empty." json:"filePath,omitempty" toml:"filePath,omitempty" yaml:"filePath,omitempty" export:"true"`
+	BufferingSize string             `description:"Number of sf log lines to process in a buffered way." json:"bufferingSize,omitempty" toml:"bufferingSize,omitempty" yaml:"bufferingSize,omitempty" export:"true"`
+	BodyEnable bool                 `description:"enable write table" json:"bodyEnable,omitempty" toml:"bodyEnable,omitempty" yaml:"bodyEnable,omitempty" export:"true"`
+	BodyMaxSize  string              `description:"max body." json:"bodyMaxSize,omitempty" toml:"bodyMaxSize,omitempty" yaml:"bodyMaxSize,omitempty" export:"true"`
+	Service string                  `description:"inner field." json:"innerService,omitempty" toml:"innerService,omitempty" yaml:"innerService,omitempty" export:"false"`
+}

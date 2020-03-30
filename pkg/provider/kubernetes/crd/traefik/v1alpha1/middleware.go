@@ -42,6 +42,7 @@ type MiddlewareSpec struct {
 	Compress          *dynamic.Compress          `json:"compress,omitempty"`
 	PassTLSClientCert *dynamic.PassTLSClientCert `json:"passTLSClientCert,omitempty"`
 	Retry             *dynamic.Retry             `json:"retry,omitempty"`
+	SfLogger          *dynamic.SfLogger          `json:"sfLogger,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true

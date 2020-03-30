@@ -3,12 +3,12 @@ package middleware
 import (
 	"context"
 	"errors"
+	"github.com/containous/traefik/v2/pkg/config/runtime"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/containous/traefik/v2/pkg/config/dynamic"
-	"github.com/containous/traefik/v2/pkg/config/runtime"
 	"github.com/containous/traefik/v2/pkg/server/internal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -20,7 +20,7 @@ func TestBuilder_BuildChainNilConfig(t *testing.T) {
 	}
 	middlewaresBuilder := NewBuilder(testConfig, nil)
 
-	chain := middlewaresBuilder.BuildChain(context.Background(), []string{"empty"})
+	chain := middlewaresBuilder.BuildChain(context.Background(), []string{"empty"}, "")
 	_, err := chain.Then(nil)
 	require.Error(t, err)
 }
@@ -31,7 +31,7 @@ func TestBuilder_BuildChainNonExistentChain(t *testing.T) {
 	}
 	middlewaresBuilder := NewBuilder(testConfig, nil)
 
-	chain := middlewaresBuilder.BuildChain(context.Background(), []string{"empty"})
+	chain := middlewaresBuilder.BuildChain(context.Background(), []string{"empty"}, "")
 	_, err := chain.Then(nil)
 	require.Error(t, err)
 }
@@ -272,7 +272,7 @@ func TestBuilder_BuildChainWithContext(t *testing.T) {
 			})
 			builder := NewBuilder(rtConf.Middlewares, nil)
 
-			result := builder.BuildChain(ctx, test.buildChain)
+			result := builder.BuildChain(ctx, test.buildChain, "")
 
 			handlers, err := result.Then(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) }))
 			if test.expectedError != nil {
@@ -368,7 +368,7 @@ func TestBuilder_buildConstructor(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			t.Parallel()
 
-			constructor, err := middlewaresBuilder.buildConstructor(context.Background(), test.middlewareID)
+			constructor, err := middlewaresBuilder.buildConstructor(context.Background(), test.middlewareID, "")
 			require.NoError(t, err)
 
 			middleware, err2 := constructor(http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {}))

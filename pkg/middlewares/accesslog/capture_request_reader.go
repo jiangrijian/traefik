@@ -2,17 +2,17 @@ package accesslog
 
 import "io"
 
-type captureRequestReader struct {
-	source io.ReadCloser
-	count  int64
+type CaptureRequestReader struct {
+	Source io.ReadCloser
+	Count  int64
 }
 
-func (r *captureRequestReader) Read(p []byte) (int, error) {
-	n, err := r.source.Read(p)
-	r.count += int64(n)
+func (r *CaptureRequestReader) Read(p []byte) (int, error) {
+	n, err := r.Source.Read(p)
+	r.Count += int64(n)
 	return n, err
 }
 
-func (r *captureRequestReader) Close() error {
-	return r.source.Close()
+func (r *CaptureRequestReader) Close() error {
+	return r.Source.Close()
 }

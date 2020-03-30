@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-
+	
 	"github.com/containous/traefik/v2/pkg/ip"
 )
 
@@ -36,6 +36,7 @@ type Middleware struct {
 	Compress          *Compress          `json:"compress,omitempty" toml:"compress,omitempty" yaml:"compress,omitempty" label:"allowEmpty"`
 	PassTLSClientCert *PassTLSClientCert `json:"passTLSClientCert,omitempty" toml:"passTLSClientCert,omitempty" yaml:"passTLSClientCert,omitempty"`
 	Retry             *Retry             `json:"retry,omitempty" toml:"retry,omitempty" yaml:"retry,omitempty"`
+	SfLogger          *SfLogger          `json:"sfLogger,omitempty" toml:"sfLogger,omitempty" yaml:"sfLogger,omitempty"`
 }
 
 // +k8s:deepcopy-gen=true
@@ -412,6 +413,14 @@ type ClientTLS struct {
 	Cert               string `json:"cert,omitempty" toml:"cert,omitempty" yaml:"cert,omitempty"`
 	Key                string `json:"key,omitempty" toml:"key,omitempty" yaml:"key,omitempty"`
 	InsecureSkipVerify bool   `json:"insecureSkipVerify,omitempty" toml:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
+}
+
+type SfLogger struct {
+	BodyEnable               bool `json:"bodyEnable,omitempty" toml:"bodyEnable,omitempty" yaml:"bodyEnable,omitempty"`
+	BodyMaxSize              string `json:"bodySize,omitempty" toml:"bodySize,omitempty" yaml:"bodySize,omitempty"`
+	FilePath                 string `json:"filePath,omitempty" toml:"filePath,omitempty" yaml:"filePath,omitempty"`
+	BufferingSize            string `json:"bufferingSize,omitempty" toml:"bufferingSize,omitempty" yaml:"bufferingSize,omitempty"`
+	Service                string `json:"service,omitempty" toml:"service,omitempty" yaml:"service,omitempty"`
 }
 
 // CreateTLSConfig creates a TLS config from ClientTLS structures.

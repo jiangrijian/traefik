@@ -15,13 +15,13 @@ const (
 )
 
 type chainBuilder interface {
-	BuildChain(ctx context.Context, middlewares []string) *alice.Chain
+	BuildChain(ctx context.Context, middlewares []string, service string) *alice.Chain
 }
 
 // New creates a chain middleware
-func New(ctx context.Context, next http.Handler, config dynamic.Chain, builder chainBuilder, name string) (http.Handler, error) {
+func New(ctx context.Context, next http.Handler, config dynamic.Chain, builder chainBuilder, name string, service string) (http.Handler, error) {
 	log.FromContext(middlewares.GetLoggerCtx(ctx, name, typeName)).Debug("Creating middleware")
 
-	middlewareChain := builder.BuildChain(ctx, config.Middlewares)
+	middlewareChain := builder.BuildChain(ctx, config.Middlewares, service)
 	return middlewareChain.Then(next)
 }

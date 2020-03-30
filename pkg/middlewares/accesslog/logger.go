@@ -47,8 +47,8 @@ func (n noopCloser) Close() error {
 
 type handlerParams struct {
 	logDataTable *LogData
-	crr          *captureRequestReader
-	crw          *captureResponseWriter
+	crr          *CaptureRequestReader
+	crw          *CaptureResponseWriter
 }
 
 // Handler will write each request and its response to the access log.
@@ -75,7 +75,7 @@ func WrapHandler(handler *Handler) alice.Constructor {
 func NewHandler(config *types.AccessLog) (*Handler, error) {
 	var file io.WriteCloser = noopCloser{os.Stdout}
 	if len(config.FilePath) > 0 {
-		f, err := openAccessLogFile(config.FilePath)
+		f, err := OpenAccessLogFile(config.FilePath)
 		if err != nil {
 			return nil, fmt.Errorf("error opening access log file: %s", err)
 		}
@@ -130,7 +130,7 @@ func NewHandler(config *types.AccessLog) (*Handler, error) {
 	return logHandler, nil
 }
 
-func openAccessLogFile(filePath string) (*os.File, error) {
+func OpenAccessLogFile(filePath string) (*os.File, error) {
 	dir := filepath.Dir(filePath)
 
 	if err := os.MkdirAll(dir, 0755); err != nil {
@@ -166,9 +166,9 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request, next http
 
 	reqWithDataTable := req.WithContext(context.WithValue(req.Context(), DataTableKey, logDataTable))
 
-	var crr *captureRequestReader
+	var crr *CaptureRequestReader
 	if req.Body != nil {
-		crr = &captureRequestReader{source: req.Body, count: 0}
+		crr = &CaptureRequestReader{Source: req.Body, Count: 0}
 		reqWithDataTable.Body = crr
 	}
 
@@ -197,7 +197,7 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request, next http
 		core[ClientHost] = forwardedFor
 	}
 
-	crw := &captureResponseWriter{rw: rw}
+	crw := &CaptureResponseWriter{Rw: rw}
 
 	next.ServeHTTP(crw, reqWithDataTable)
 
@@ -206,7 +206,6 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request, next http
 	}
 
 	logDataTable.DownstreamResponse = crw.Header()
-
 	if h.config.BufferingSize > 0 {
 		h.logHandlerChan <- handlerParams{
 			logDataTable: logDataTable,
@@ -264,7 +263,7 @@ func usernameIfPresent(theURL *url.URL) string {
 }
 
 // Logging handler to log frontend name, backend name, and elapsed time.
-func (h *Handler) logTheRoundTrip(logDataTable *LogData, crr *captureRequestReader, crw *captureResponseWriter) {
+func (h *Handler) logTheRoundTrip(logDataTable *LogData, crr *CaptureRequestReader, crw *CaptureResponseWriter) {
 	core := logDataTable.Core
 
 	retryAttempts, ok := core[RetryAttempts].(int)
@@ -274,7 +273,7 @@ func (h *Handler) logTheRoundTrip(logDataTable *LogData, crr *captureRequestRead
 	core[RetryAttempts] = retryAttempts
 
 	if crr != nil {
-		core[RequestContentSize] = crr.count
+		core[RequestContentSize] = crr.Count
 	}
 
 	core[DownstreamStatus] = crw.Status()
