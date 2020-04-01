@@ -23,6 +23,7 @@ type logData struct {
     Time            time.Time
     HostName        string
     Path            string
+    OriginPath      string
 }
 
 type handlerParams struct {
@@ -85,6 +86,7 @@ func (h *Handler) logTheRoundTrip(logDataTable *logData, crr *accesslog.CaptureR
     fields["service"] = logDataTable.Service
     fields["hostName"] = logDataTable.HostName
     fields["path"] = logDataTable.Path
+    fields["originPath"] = logDataTable.OriginPath
     
     h.mu.Lock()
     defer h.mu.Unlock()
@@ -171,8 +173,8 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
     now := time.Now().UTC()
     
     headers := make(map[string]interface{})
-    for k, v := range req.Header {
-        headers[k] = v
+    for k := range req.Header {
+        headers[k] = req.Header.Get(k)
     }
     
     body := ""
@@ -190,6 +192,9 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
         }
         body = string(bodyByte[:len])
     }
+    
+    originPath := req.URL.Path
+    path := strings.Split(originPath, "?")
 
     logDataTable := &logData{
         Header: headers,
@@ -197,7 +202,8 @@ func (h *Handler) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
         Service: h.config.Service,
         Body: body,
         HostName: req.Host,
-        Path: req.URL.Path,
+        Path: path[0],
+        OriginPath: originPath,
     }
     
     var crr *accesslog.CaptureRequestReader

@@ -48,7 +48,7 @@ func GetBodyData(bufferingSize string, bodyEnable bool, bodyMaxSize string, t *t
         RemoteAddr: fmt.Sprintf("%s:%d", "a.com", 90),
         URL: &url.URL{
             User: url.UserPassword("admin", "123"),
-            Path: "/a/b/",
+            Path: "/a/b/?query=test",
         },
         Body:       ioutil.NopCloser(strings.NewReader("I'm body")),
     }
@@ -70,6 +70,7 @@ func GetBodyData(bufferingSize string, bodyEnable bool, bodyMaxSize string, t *t
     
     logger.ServeHTTP(httptest.NewRecorder(), req)
     
+    
     logData, err := ioutil.ReadFile(filePath)
     require.NoError(t, err)
     
@@ -85,8 +86,14 @@ func genneralLog(logData []byte, expected interface{}, returnValue interface{}) 
 }
 
 func testBody(bodyEnable bool, expectedBody string, t *testing.T, bodyMaxSize string)  {
-    logData := GetBodyData("1K", bodyEnable, bodyMaxSize, t)
+    logData := GetBodyData("", bodyEnable, bodyMaxSize, t)
     var data = make(map[string]interface{})
+    if bodyEnable && expectedBody != "" && (logData == nil || len(logData) == 0) {
+        assert.NotEqual(t, nil, logData,
+            "no log")
+        assert.NotEqual(t, 0, len(logData),
+            "no log")
+    }
     if err := json.Unmarshal(logData, &data); err == nil {
         assert.Equal(t, expectedBody, data["body"],
             genneralLog(logData, "I'm body", data["body"].(string)))
@@ -100,7 +107,7 @@ func testBody(bodyEnable bool, expectedBody string, t *testing.T, bodyMaxSize st
 }
 
 func TestHeaders(t *testing.T) {
-    logData := GetBodyData("1K", false, "", t)
+    logData := GetBodyData("", false, "", t)
     
     var data = make(map[string]interface{})
     if err := json.Unmarshal(logData, &data); err == nil {
@@ -108,10 +115,4 @@ func TestHeaders(t *testing.T) {
         assert.Equal(t, 2, len(headers.(map[string]interface{})),
             genneralLog(logData, 2, len(headers.(map[string]interface{}))))
     }
-}
-
-func TestDirectWriteLog(t *testing.T)  {
-    logData := GetBodyData("", false, "", t)
-    assert.NotEqual(t, logData, "",
-        genneralLog(logData, "", logData))
 }
