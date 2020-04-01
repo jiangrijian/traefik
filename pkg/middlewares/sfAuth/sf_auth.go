@@ -2,28 +2,16 @@ package sfAuth
 
 import (
     "fmt"
-    "github.com/containous/traefik/v2/pkg/middlewares/sfAuth/auth"
     "net/http"
     "sync"
 )
 
-type AuthType int
-
-const (
-    _ AuthType = iota
-    Open          = 1   // 开放
-    Login         = 2   // 登录
-    Authorization = 3   // 授权
-    Approval      = 4   // 审批
-    Record        = 5   // 备案
-)
-
 type SfAuth struct {
-    SvcPath string
-    AuthPlugin []auth.Plugin
-    AuthType AuthType
-    Next    http.Handler
-    Mu             sync.Mutex
+    SvcPath    string
+    AuthPlugin []Plugin
+    AuthType   AuthType
+    Next       http.Handler
+    Mu         sync.Mutex
 }
 
 type UserInfo struct {
@@ -49,14 +37,19 @@ func GetUserInfoByToken(token string) (UserInfo, error) {
 }
 
 func NewHandler(next http.Handler) (*SfAuth, error) {
-    openAuthPlugin := auth.OpenAuthPlugin{}
-    loginAuthPlugin := auth.LoginAuthPlugin{}
-    authorizationAuthPlugin := auth.AuthorizationAuthPlugin{}
-    approvalAuthPlugin := auth.ApprovalAuthPlugin{}
-    recordAuthPlugin := auth.RecordAuthPlugin{}
+    openAuthPlugin := OpenAuthPlugin{}
+    loginAuthPlugin := LoginAuthPlugin{}
+    authorizationAuthPlugin := AuthorizationAuthPlugin{}
+    approvalAuthPlugin := ApprovalAuthPlugin{}
+    recordAuthPlugin := RecordAuthPlugin{}
     
-    plugins := []auth.Plugin{openAuthPlugin, loginAuthPlugin,
-        authorizationAuthPlugin, approvalAuthPlugin, recordAuthPlugin}
+    plugins := []Plugin{
+        openAuthPlugin,
+        loginAuthPlugin,
+        authorizationAuthPlugin,
+        approvalAuthPlugin,
+        recordAuthPlugin,
+    }
     
     sfAuth := &SfAuth{
         SvcPath: "",
@@ -74,6 +67,8 @@ func (s *SfAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
     if s.AuthType == 0 {
         authType, err := s.GetSvcPolicyBySvc(s.SvcPath)
         if err != nil {
+            rw.WriteHeader(500)
+            rw.Write([]byte(err.Error()))
             fmt.Errorf("get svc policy error: %s", err)
             return
         }
@@ -81,9 +76,11 @@ func (s *SfAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
     }
     
     for _, plugin := range s.AuthPlugin {
-        authSuccess, err := plugin.Auth(*s, rw, req)
+        authSuccess, err := plugin.Auth(s.AuthType, rw, req)
         if err != nil {
-            fmt.Errorf("%s exec auth plugin error: %s", s.SvcPath, err)
+            rw.WriteHeader(401)
+            rw.Write([]byte(err.Error()))
+            fmt.Errorf("%s exec auth plugin fail: %s", s.SvcPath, err)
             return
         }
         if authSuccess {
@@ -93,4 +90,9 @@ func (s *SfAuth) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
             return
         }
     }
+    
+    err := fmt.Errorf("%s auth fail", s.SvcPath)
+    rw.WriteHeader(401)
+    rw.Write([]byte(err.Error()))
+    return
 }
